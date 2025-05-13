@@ -1,4 +1,5 @@
 #include <Wire.h>
+#include <LiquidCrystal_I2C.h>  // Include the I2C LCD library
 #include "MAX30100_PulseOximeter.h"
 
 #define REPORTING_PERIOD_MS     5000
@@ -6,6 +7,9 @@
 
 // Create a PulseOximeter object
 PulseOximeter pox;
+
+// Create an LCD object with the I2C address (e.g., 0x27) and dimensions (16x2)
+LiquidCrystal_I2C lcd(0x27, 16, 2);
 
 // Time tracking variables
 uint32_t tsLastReport = 0;
@@ -20,27 +24,39 @@ bool sensorInitialized = false;
 
 // Callback routine is executed when a pulse is detected
 void onBeatDetected() {
-    Serial.println("Beat!");
+    lcd.setCursor(0, 1);  // Set cursor to the second line
+    lcd.print("Beat Detected!   ");
 }
 
 void setup() {
-    Serial.begin(9600);
-    Serial.println("MAX30100 Pulse Oximeter");
-    Serial.println("Attempting first initialization...");
-    
+    lcd.init();            // Initialize the LCD
+    lcd.backlight();       // Turn on the backlight
+    lcd.setCursor(0, 0);
+    lcd.print("MAX30100 Pulse");
+    lcd.setCursor(0, 1);
+    lcd.print("Oximeter Init...");
+    delay(2000);
+    lcd.clear();
+
     // Initial attempt to initialize the sensor
     initializeSensor();
 }
 
 bool initializeSensor() {
-    Serial.print("Initializing pulse oximeter... ");
+    lcd.setCursor(0, 0);
+    lcd.print("Initializing...");
     
     // Initialize sensor
     if (!pox.begin()) {
-        Serial.println("FAILED");
+        lcd.setCursor(0, 1);
+        lcd.print("FAILED          ");
         return false;
     } else {
-        Serial.println("SUCCESS");
+        lcd.setCursor(0, 1);
+        lcd.print("SUCCESS         ");
+        delay(1000);
+        lcd.clear();
+
         pox.setIRLedCurrent(MAX30100_LED_CURR_46_8MA);
         
         // Register a callback routine
@@ -60,23 +76,31 @@ void loop() {
             pulse = pox.getHeartRate();
             oxgn = pox.getSpO2();  
 
-            Serial.print("Heart rate: ");  
-            Serial.print(pulse);
-            Serial.print(" bpm / SpO2: ");  
-            Serial.print(oxgn);
-            Serial.println("%");
+            lcd.setCursor(0, 0);
+            lcd.print("HR: ");
+            lcd.print(pulse);
+            lcd.print(" bpm  ");
+            
+            lcd.setCursor(0, 1);
+            lcd.print("SpO2: ");
+            lcd.print(oxgn);
+            lcd.print("%     ");
 
             tsLastReport = millis();
         }
     } 
     // If not initialized, try again every RETRY_PERIOD_MS
     else if (millis() - tsLastInitAttempt > RETRY_PERIOD_MS) {
-        Serial.println("Retrying sensor initialization...");
+        lcd.setCursor(0, 0);
+        lcd.print("Retrying Init.. ");
         sensorInitialized = initializeSensor();
         tsLastInitAttempt = millis();
         
         if (sensorInitialized) {
-            Serial.println("Sensor initialized successfully after retry!");
+            lcd.setCursor(0, 1);
+            lcd.print("Init Successful!");
+            delay(2000);
+            lcd.clear();
         }
     }
 }
