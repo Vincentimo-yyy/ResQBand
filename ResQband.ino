@@ -66,21 +66,25 @@ bool initializeSensor() {
 }
 
 void loop() {
-    // Check if sensor is initialized
     if (sensorInitialized) {
-        // Read from the sensor
         pox.update();
+
+        // Debugging: Check raw data
+        Serial.print("IR: ");
+        Serial.print(pox.getIR());
+        Serial.print(" / RED: ");
+        Serial.println(pox.getRed());
 
         // Grab the updated heart rate and SpO2 levels
         if (millis() - tsLastReport > REPORTING_PERIOD_MS) {
             pulse = pox.getHeartRate();
-            oxgn = pox.getSpO2();  
+            oxgn = pox.getSpO2();
 
             lcd.setCursor(0, 0);
             lcd.print("HR: ");
             lcd.print(pulse);
             lcd.print(" bpm  ");
-            
+
             lcd.setCursor(0, 1);
             lcd.print("SpO2: ");
             lcd.print(oxgn);
@@ -88,9 +92,7 @@ void loop() {
 
             tsLastReport = millis();
         }
-    } 
-    // If not initialized, try again every RETRY_PERIOD_MS
-    else if (millis() - tsLastInitAttempt > RETRY_PERIOD_MS) {
+    } else if (millis() - tsLastInitAttempt > RETRY_PERIOD_MS) {
         lcd.setCursor(0, 0);
         lcd.print("Retrying Init.. ");
         sensorInitialized = initializeSensor();
@@ -103,4 +105,6 @@ void loop() {
             lcd.clear();
         }
     }
+
+    delay(100);  // Stabilize sensor readings
 }
